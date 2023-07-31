@@ -6,21 +6,22 @@ from sqlalchemy import func
 
 from sqlalchemy import select
 
-from src.database.models import Contact
+from src.database.models import Contact, User
 from src.schemas import ContactSchema, ContactUpdateSchema
 
 
-async def get_contacts(db: AsyncSession):
-    contacts = await db.execute(select(Contact))
+async def get_contacts(limit: int, offset: int, db: AsyncSession, user: User):
+    sq = select(Contact).filter_by(user=user).offset(offset).limit(limit)
+    contacts = await db.execute(sq)
     return contacts.scalars().all()
 
 
-async def get_contact(contact_id: int, db: AsyncSession):
-    contact = await db.execute(select(Contact).where(Contact.id == contact_id))
+async def get_contact(contact_id: int, db: AsyncSession, user: User):
+    contact = await db.execute(select(Contact).where(Contact.id == contact_id, user=user))
     return contact.scalars().first()
 
 
-async def create_contact(body: ContactSchema, db: AsyncSession):
+async def create_contact(body: ContactSchema, db: AsyncSession, user: User):
     contact_data = {
         "first_name": body.first_name,
         "last_name": body.last_name,
@@ -30,15 +31,15 @@ async def create_contact(body: ContactSchema, db: AsyncSession):
         "created_date": body.created_date
     }
 
-    contact = Contact(**contact_data)
+    contact = Contact(**contact_data, user=user)
     db.add(contact)
     await db.commit()
     await db.refresh(contact)
     return contact
 
 
-async def update_contact(contact_id: int, body: ContactUpdateSchema, db: AsyncSession):
-    sq = select(Contact).filter_by(id=contact_id)
+async def update_contact(contact_id: int, body: ContactUpdateSchema, db: AsyncSession, user: User):
+    sq = select(Contact).filter_by(id=contact_id, user=user)
     result = await db.execute(sq)
     contact = result.scalar_one_or_none()
     if contact:
@@ -53,8 +54,8 @@ async def update_contact(contact_id: int, body: ContactUpdateSchema, db: AsyncSe
     return contact
 
 
-async def remove_contact(contact_id: int, body: ContactSchema, db: AsyncSession):
-    sq = select(Contact).filter_by(id=contact_id)
+async def remove_contact(contact_id: int, body: ContactSchema, db: AsyncSession, user: User):
+    sq = select(Contact).filter_by(id=contact_id, user=user)
     result = await db.execute(sq)
     contact = result.scalar_one_or_none()
     if contact:

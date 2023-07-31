@@ -1,7 +1,29 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
+
+
+class UserSchema(BaseModel):
+    username: str = Field(min_length=5, max_length=16)
+    email: EmailStr
+    password: str = Field(min_length=6, max_length=10)
+
+
+class UserResponseSchema(BaseModel):
+    id: int
+    username: str
+    email: str
+    avatar: str
+
+    class Config:
+        from_attributes = True
+
+
+class TokenModel(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
 
 
 class ContactSchema(BaseModel):
@@ -31,11 +53,15 @@ class ContactUpdateSchema(BaseModel):
 
 
 class ContactResponse(BaseModel):
+    id: int = 1
     first_name: str
     last_name: str
     email: str
     phone_number: str
     birthday: date
+    created_date: datetime | None
+    update_date: datetime | None
+    user: UserResponseSchema | None
 
     class Config:
         from_attributes = True
